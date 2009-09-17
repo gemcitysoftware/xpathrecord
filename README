@@ -1,0 +1,13 @@
+XPathRecord
+
+Prerequisits:
+
+- Python 2.6
+- libxml2
+
+To test: python -m test.all
+
+Usage: See the tests for now.
+
+XPathRecord is released under a Creative Commons Attribution 3.0 license:
+http://creativecommons.org/licenses/by/3.0/
