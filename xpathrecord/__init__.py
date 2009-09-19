@@ -262,21 +262,31 @@ class ChildrenField(Field):
 
     Constructor args:
     
-    * xpath: A relative xpath string
-    * cls:   A subclass of XPathRecord
+    * xpath:    A relative xpath string
+    * cls:      A subclass of XPathRecord
 
     Constructor kwargs:
+
+    * makelist: Return a list of the children rather than a generator
+                (Defaults to False)
     
     None
     """
-    def __init__(self, xpath, cls):
+    def __init__(self, xpath, cls, makelist = False):
         self.__xpath = xpath
         self.__cls   = cls
+        self.__list  = makelist
         
-    def value(self, dom):
+    def __value(self, dom):
         for n in dom.xpathEval(self.__xpath):
             for x in self.__cls.records(n, '.'):
                 yield x
+
+    def value(self, dom):
+        if self.__list:
+            return list(self.__value(dom))
+        else:
+            return self.__value(dom)
 
 class FirstChildField(Field):
     """

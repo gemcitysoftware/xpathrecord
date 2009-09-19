@@ -44,6 +44,7 @@ class Baz(xpathrecord.XPathRecord):
 class Foo(xpathrecord.XPathRecord):
     name = xpathrecord.TextField('name/text()')
     bar = xpathrecord.ChildrenField('bar', Bar)
+    lbar = xpathrecord.ChildrenField('bar', Bar, makelist = True)
     baz = xpathrecord.FirstChildField('baz', Baz)
     date = xpathrecord.DatetimeField('name/@date')
 
@@ -53,6 +54,18 @@ class SimpleTest(unittest.TestCase):
     
     def tearDown(self):
         del(self.dom)
+
+    def testCanNotIterateOverBarTwice(self):
+        foos = Foo.records(self.dom, '/foo')
+        for foo in foos:
+            self.assertEquals(3, sum(1 for _ in foo.bar()))
+            self.assertEquals(0, sum(1 for _ in foo.bar()))
+
+    def testCanIterateOverLBarTwice(self):
+        foos = Foo.records(self.dom, '/foo')
+        for foo in foos:
+            self.assertEquals(3, sum(1 for _ in foo.lbar()))
+            self.assertEquals(3, sum(1 for _ in foo.lbar()))
 
     def testFoo(self):
         foos = list(Foo.records(self.dom, '/foo'))
