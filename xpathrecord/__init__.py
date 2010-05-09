@@ -26,9 +26,10 @@ if '__main__' == __name__:
     main()
 """
 
-VERSION = '0.3'
+VERSION = '0.5'
+NO_DEFAULT_SET = object()
 
-# Copyright 2009 Gem City Software
+# Copyright 2009, 2010 Gem City Software
 # Distributed under http://creativecommons.org/licenses/by/3.0/
 
 import copy, datetime, re
@@ -81,6 +82,9 @@ class XPathRecord(object):
             if isinstance(field, Field):
                 setattr(self, name, Lazy(self.__dom, field))
 
+    def get_dom(self):
+        return self.__dom
+
     @classmethod
     def records(cls, dom, xpath = None):
         for node in dom.xpathEval(xpath):
@@ -102,14 +106,19 @@ class TextField(Field):
 
     Constructor kwargs:
     
-    None
+    * default: A default value to return if the required xpath returns
+               no results.
     """
-    def __init__(self, xpath):
+    def __init__(self, xpath, default = NO_DEFAULT_SET):
         self.__xpath = xpath
+        self.__default = default
 
     def value(self, dom):
-        return ''.join(n.content.strip() for n in 
-                       dom.xpathEval(self.__xpath)).strip()
+        nodes = list(dom.xpathEval(self.__xpath))
+        if 0 == len(nodes) and self.__default is not NO_DEFAULT_SET:
+            return self.__default
+        else:
+            return ''.join(n.content.strip() for n in nodes)
 
 class FloatField(TextField):
     """
@@ -124,7 +133,9 @@ class FloatField(TextField):
 
     Constructor kwargs:
     
-    None
+    * default: A default value to return if the required xpath returns
+               no results.  (Should be something that can be passed to
+               the "float" builtin function)
     """
     def value(self, dom):
         return float(TextField.value(self, dom))
@@ -142,7 +153,9 @@ class IntField(TextField):
 
     Constructor kwargs:
     
-    None
+    * default: A default value to return if the required xpath returns
+               no results.  (Should be something that can be passed to
+               the "int" builtin function)
     """
     def value(self, dom):
         return int(TextField.value(self, dom))
@@ -158,7 +171,10 @@ class BooleanField(TextField):
     * xpath: A relative xpath string
 
     Constructor kwargs:
-    
+
+    * default: A default value to return if the required xpath returns
+               no results.  (Should be something in the true or false
+               values list.)
     * true_values: An optional list of strings to be considered
                    the universe of acceptable (case-insensitive)
                    true values.
@@ -166,11 +182,12 @@ class BooleanField(TextField):
                     the universe of acceptable (case-insensitive)
                     false values.                   
     """
-    DEFAULT_TRUE_VALUES = ('y', 'yes', 'true', 't', 'ok')
-    DEFAULT_FALSE_VALUES = ('n', 'no', 'false', 'f', 'nil')
+    DEFAULT_TRUE_VALUES = ('y', 'yes', 'true', 't', 'ok', True)
+    DEFAULT_FALSE_VALUES = ('n', 'no', 'false', 'f', 'nil', False)
 
-    def __init__(self, xpath, true_values = None, false_values = None):
-        TextField.__init__(self, xpath)
+    def __init__(self, xpath, default = NO_DEFAULT_SET,
+                 true_values = None, false_values = None):
+        TextField.__init__(self, xpath, default)
         if true_values is None:
             self.__true_values = self.DEFAULT_TRUE_VALUES
         else:
@@ -201,6 +218,9 @@ class DatetimeField(TextField):
 
     Constructor kwargs:
     
+    * default: A default value to return if the required xpath returns
+               no results.  (Should be either a datetime.datetime or
+               a datetime.date.)
     * format: a list of datetime.datetime.strptime-compatible date 
               formats.  It will use each format in this list, in order
               to try to parse the text for the date.  If none of them
@@ -221,8 +241,8 @@ class DatetimeField(TextField):
     def __kluge_date(self, s):
         return self.__kluge_date_re.sub('', s)
 
-    def __init__(self, xpath, format = []):
-        TextField.__init__(self, xpath)
+    def __init__(self, xpath, default = NO_DEFAULT_SET, format = []):
+        TextField.__init__(self, xpath, default)
         if isinstance(format, str):
             self.__format = (format,)
         else:
@@ -230,6 +250,8 @@ class DatetimeField(TextField):
 
     def value(self, dom):
         s = self.__kluge_date(TextField.value(self, dom))
+        if isinstance(s, datetime.datetime) or isinstance(s, datetime.date):
+            return s
         for fmt in self.__format + self.DEFAULT_FORMATS:
             try:
                 return strptime(s, fmt)
