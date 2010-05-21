@@ -26,7 +26,7 @@ if '__main__' == __name__:
     main()
 """
 
-VERSION = '0.5'
+VERSION = '0.6'
 NO_DEFAULT_SET = object()
 
 # Copyright 2009, 2010 Gem City Software
