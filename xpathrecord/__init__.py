@@ -296,7 +296,10 @@ class ChildrenField(Field):
     """
     def __init__(self, xpath, cls, makelist = False):
         self.__xpath = xpath
-        self.__cls   = cls
+        if instanceof(cls, str):
+            self.__cls = globals()[cls]
+        else:
+            self.__cls   = cls
         self.__list  = makelist
         
     def __value(self, dom):
@@ -326,7 +329,10 @@ class FirstChildField(Field):
     """
     def __init__(self, xpath, cls):
         self.__xpath = xpath
-        self.__cls   = cls
+        if instanceof(cls, str):
+            self.__cls = globals()[cls]
+        else:
+            self.__cls   = cls
         
     def value(self, dom):
         for n in dom.xpathEval(self.__xpath):
